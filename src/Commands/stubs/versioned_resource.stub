@@ -1,0 +1,9 @@
+<?php
+
+namespace {{ namespace }};
+
+use Uttamrabadiya\LaravelApiVersionManager\Http\Resources\BaseResource;
+
+final class {{ class }} extends BaseResource
+{
+}

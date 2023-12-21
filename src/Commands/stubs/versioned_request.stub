@@ -1,0 +1,9 @@
+<?php
+
+namespace {{ namespace }};
+
+use Uttamrabadiya\LaravelApiVersionManager\Http\Requests\BaseRequest;
+
+final class {{ class }} extends BaseRequest
+{
+}

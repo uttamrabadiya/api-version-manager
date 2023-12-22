@@ -2,7 +2,7 @@
 
 namespace {{ namespace }};
 
-use Uttamrabadiya\LaravelApiVersionManager\Http\Requests\BaseRequest;
+use UttamRabadiya\ApiVersionManager\Http\Requests\BaseRequest;
 
 final class {{ class }} extends BaseRequest
 {

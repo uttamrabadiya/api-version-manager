@@ -1,13 +1,13 @@
 <?php
 
-namespace Uttamrabadiya\ApiVersionManager\Commands;
+namespace UttamRabadiya\ApiVersionManager\Commands;
 
 use Illuminate\Console\GeneratorCommand;
-use Symfony\Component\Console\Attribute\AsCommand;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Symfony\Component\Console\Input\InputOption;
-use Uttamrabadiya\ApiVersionManager\Traits\VersionResolver;
+use UttamRabadiya\ApiVersionManager\Exceptions\InvalidDefaultVersionException;
+use UttamRabadiya\ApiVersionManager\Traits\VersionResolver;
 
-#[AsCommand(name: 'make:versioned:request')]
 class MakeVersionedRequestCommand extends GeneratorCommand
 {
     use VersionResolver;
@@ -35,19 +35,21 @@ class MakeVersionedRequestCommand extends GeneratorCommand
 
     /**
      * Execute the console command.
+     * @throws InvalidDefaultVersionException|FileNotFoundException
      */
     public function handle()
     {
         parent::handle();
 
-        $versions = explode(',', $this->option('versions'));
-
+        $versions = $this->gatherVersionsInteractively();
         foreach ($versions as $version) {
             $this->createRequest($version);
         }
+
+        return true;
     }
 
-    protected function getStub()
+    protected function getStub(): string
     {
         return __DIR__ . '/stubs/versioned_request.stub';
     }
@@ -58,17 +60,16 @@ class MakeVersionedRequestCommand extends GeneratorCommand
      * @param string $rootNamespace
      * @return string
      */
-    protected function getDefaultNamespace($rootNamespace)
+    protected function getDefaultNamespace($rootNamespace): string
     {
         return $rootNamespace . '\Http\Requests\Versioned';
     }
 
     /**
      * Get the console command options.
-     *
-     * @return array
+     * @return array<mixed>
      */
-    protected function getOptions()
+    protected function getOptions(): array
     {
         return [
             ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the resource already exists'],
@@ -76,18 +77,36 @@ class MakeVersionedRequestCommand extends GeneratorCommand
         ];
     }
 
-    /**
-     * Create a controller for the model.
-     *
-     * @return void
-     */
-    protected function createRequest($version)
+    protected function createRequest(string $version): void
     {
-        $request = class_basename($this->argument('name'));
+        /** @var string $inputName */
+        $inputName = $this->argument('name');
+        $request = class_basename($inputName);
 
         $this->call('make:request', array_filter([
             'name' => "$version/$request",
             '--force' => $this->option('force'),
         ]));
+    }
+
+    /**
+     * Gather the desired Sail services using an interactive prompt.
+     *
+     * @return array
+     * @throws InvalidDefaultVersionException
+     */
+    private function gatherVersionsInteractively(): array
+    {
+        $versions = self::getAvailableVersions();
+        $defaultVersion = self::getDefaultVersion();
+        if (function_exists('\Laravel\Prompts\multiselect')) {
+            return \Laravel\Prompts\multiselect(
+                'Select required versions for the request',
+                $versions,
+                [$defaultVersion],
+            );
+        }
+
+        return $this->choice('Select required versions for the request', $versions, array_search($defaultVersion, $versions), null, true);
     }
 }

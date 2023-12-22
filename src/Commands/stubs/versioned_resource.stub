@@ -2,7 +2,7 @@
 
 namespace {{ namespace }};
 
-use Uttamrabadiya\LaravelApiVersionManager\Http\Resources\BaseResource;
+use UttamRabadiya\ApiVersionManager\Http\Resources\BaseResource;
 
 final class {{ class }} extends BaseResource
 {

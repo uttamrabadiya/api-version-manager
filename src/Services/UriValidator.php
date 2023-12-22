@@ -1,6 +1,6 @@
 <?php
 
-namespace Uttamrabadiya\ApiVersionManager\Services;
+namespace UttamRabadiya\ApiVersionManager\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
@@ -8,8 +8,15 @@ use Illuminate\Routing\Matching\UriValidator as LaravelUriValidator;
 
 class UriValidator extends LaravelUriValidator
 {
-    private array $versions;
-    private string $apiPrefix;
+    /**
+     * @var array[]
+     */
+    private $versions;
+
+    /**
+     * @var string
+     */
+    private $apiPrefix;
 
     public function __construct()
     {
@@ -20,10 +27,9 @@ class UriValidator extends LaravelUriValidator
     /**
      * @param Route $route
      * @param Request $request
-     * @return bool|false|int
-     * @throws \Throwable
+     * @return bool
      */
-    public function matches(Route $route, Request $request)
+    public function matches(Route $route, Request $request): bool
     {
         $result = false;
 
@@ -47,12 +53,12 @@ class UriValidator extends LaravelUriValidator
             /**
              * exit if you find a proportionate route
              */
-            if ($result) return $result;
+            if ($result) return (bool)$result;
 
             if (isset($this->versions[$index + 1])) {
                 $path = str_replace($this->versions[$index], $this->versions[$index + 1], $path);
             }
         }
-        return $result;
+        return (bool)$result;
     }
 }

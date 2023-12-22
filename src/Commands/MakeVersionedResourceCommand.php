@@ -1,13 +1,13 @@
 <?php
 
-namespace Uttamrabadiya\ApiVersionManager\Commands;
+namespace UttamRabadiya\ApiVersionManager\Commands;
 
 use Illuminate\Console\GeneratorCommand;
-use Symfony\Component\Console\Attribute\AsCommand;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Symfony\Component\Console\Input\InputOption;
-use Uttamrabadiya\ApiVersionManager\Traits\VersionResolver;
+use UttamRabadiya\ApiVersionManager\Exceptions\InvalidDefaultVersionException;
+use UttamRabadiya\ApiVersionManager\Traits\VersionResolver;
 
-#[AsCommand(name: 'make:versioned:resource')]
 class MakeVersionedResourceCommand extends GeneratorCommand
 {
     use VersionResolver;
@@ -35,19 +35,18 @@ class MakeVersionedResourceCommand extends GeneratorCommand
 
     /**
      * Execute the console command.
+     * @throws InvalidDefaultVersionException|FileNotFoundException
      */
     public function handle()
     {
         parent::handle();
 
-        $versions = self::getAvailableVersions();
-        $latestVersion = self::getLatestVersion();
-
-        $versions = explode(',', $this->option('versions'));
-
+        $versions = $this->gatherVersionsInteractively();
         foreach ($versions as $version) {
             $this->createResource($version);
         }
+
+        return true;
     }
 
     protected function getStub()
@@ -69,7 +68,7 @@ class MakeVersionedResourceCommand extends GeneratorCommand
     /**
      * Get the console command options.
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function getOptions()
     {
@@ -79,19 +78,37 @@ class MakeVersionedResourceCommand extends GeneratorCommand
         ];
     }
 
-    /**
-     * Create a controller for the model.
-     *
-     * @return void
-     */
-    protected function createResource($version)
+    private function createResource(string $version): void
     {
-        $resource = class_basename($this->argument('name'));
+        /** @var string $resourceName */
+        $resourceName = $this->argument('name');
+        $resource = class_basename($resourceName);
 
         $this->call('make:resource', array_filter([
             'name' => "$version/$resource",
             '--force' => $this->option('force'),
             '--collection' => $this->option('collection'),
         ]));
+    }
+
+    /**
+     * Gather the desired Sail services using an interactive prompt.
+     *
+     * @return array
+     * @throws InvalidDefaultVersionException
+     */
+    private function gatherVersionsInteractively(): array
+    {
+        $versions = self::getAvailableVersions();
+        $defaultVersion = self::getDefaultVersion();
+        if (function_exists('\Laravel\Prompts\multiselect')) {
+            return \Laravel\Prompts\multiselect(
+                'Select required versions for the resource',
+                $versions,
+                [$defaultVersion],
+            );
+        }
+
+        return $this->choice('Select required versions for the resource', $versions, array_search($defaultVersion, $versions), null, true);
     }
 }

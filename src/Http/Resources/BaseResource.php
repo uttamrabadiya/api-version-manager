@@ -1,11 +1,11 @@
 <?php
 
-namespace Uttamrabadiya\LaravelApiVersionManager\Http\Resources;
+namespace UttamRabadiya\ApiVersionManager\Http\Resources;
 
 use Exception;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Uttamrabadiya\ApiVersionManager\Traits\VersionResolver;
+use UttamRabadiya\ApiVersionManager\Traits\VersionResolver;
 
 abstract class BaseResource
 {
@@ -14,9 +14,10 @@ abstract class BaseResource
     const RESOLVER_ENTITY = 'Resources';
 
     /**
+     * @param mixed $data
      * @throws Exception
      */
-    public static function item(mixed $data): JsonResource
+    public static function item($data): JsonResource
     {
         $resource = self::resolveClassName();
 
@@ -24,9 +25,10 @@ abstract class BaseResource
     }
 
     /**
+     * @param mixed $data
      * @throws Exception
      */
-    public static function collection(mixed $data): AnonymousResourceCollection
+    public static function collection($data): AnonymousResourceCollection
     {
         $resource = self::resolveClassName();
 

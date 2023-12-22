@@ -1,25 +1,21 @@
 <?php
 
-namespace Uttamrabadiya\ApiVersionManager;
+namespace UttamRabadiya\ApiVersionManager;
 
 use Illuminate\Routing\Matching\UriValidator as LaravelUriValidator;
 use Illuminate\Routing\Route;
 use Illuminate\Support\ServiceProvider;
-use Uttamrabadiya\ApiVersionManager\Commands\MakeVersionedRequestCommand;
-use Uttamrabadiya\ApiVersionManager\Commands\MakeVersionedResourceCommand;
-use Uttamrabadiya\ApiVersionManager\Services\UriValidator;
+use UttamRabadiya\ApiVersionManager\Commands\MakeVersionedRequestCommand;
+use UttamRabadiya\ApiVersionManager\Commands\MakeVersionedResourceCommand;
+use UttamRabadiya\ApiVersionManager\Services\UriValidator;
 
 class ApiVersionManagerServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
      */
-    public function boot()
+    public function boot(): void
     {
-        /*
-         * Optional methods to load your package assets
-         */
-
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__ . '/../config/config.php' => config_path('api-version-manager.php'),
@@ -36,7 +32,7 @@ class ApiVersionManagerServiceProvider extends ServiceProvider
     /**
      * Register the application services.
      */
-    public function register()
+    public function register(): void
     {
         // Automatically apply the package configuration
         $this->mergeConfigFrom(__DIR__ . '/../config/config.php', 'api-version-manager');
@@ -44,7 +40,8 @@ class ApiVersionManagerServiceProvider extends ServiceProvider
         $this->loadRouteValidator();
     }
 
-    private function loadRouteValidator() {
+    private function loadRouteValidator(): void
+    {
         $validators = Route::getValidators();
 
         // Append our custom UriValidator

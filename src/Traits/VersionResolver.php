@@ -1,25 +1,20 @@
 <?php
 
-namespace Uttamrabadiya\ApiVersionManager\Traits;
+namespace UttamRabadiya\ApiVersionManager\Traits;
 
-use Uttamrabadiya\LaravelApiVersionManager\Exceptions\InvalidEntityException;
-use Uttamrabadiya\LaravelApiVersionManager\Exceptions\EntityClassNotFoundException;
+use Illuminate\Contracts\Container\BindingResolutionException;
+use UttamRabadiya\ApiVersionManager\Exceptions\InvalidDefaultVersionException;
+use UttamRabadiya\ApiVersionManager\Exceptions\InvalidEntityException;
+use UttamRabadiya\ApiVersionManager\Exceptions\EntityClassNotFoundException;
 
 trait VersionResolver
 {
-    private static function supportedEntities(): array
-    {
-        return [
-            'Requests',
-            'Resources',
-        ];
-    }
-
     /**
+     * @throws InvalidDefaultVersionException
      * @throws InvalidEntityException
      * @throws EntityClassNotFoundException
      */
-    private static function resolveClassName(): string
+    public static function resolveClassName(): string
     {
         if (! defined('self::RESOLVER_ENTITY')) {
             throw new InvalidEntityException('Define resolver entity constant (RESOLVER_ENTITY) while using VersionResolver Trait');
@@ -30,28 +25,37 @@ trait VersionResolver
             throw new InvalidEntityException(sprintf('Unsupported resolver entity: %s', $entity));
         }
 
-        $className = class_basename(get_called_class());
-
-        $version = self::getVersion();
-        $appNamespace = config('api-version-manager.app_namespace');
-
-        if (! class_exists($entityClass = sprintf("%s\\%s\\%s\\%s", $appNamespace, $entity, $version, $className))) {
-            throw new EntityClassNotFoundException(sprintf('Class %s not found', $appNamespace));
-        }
-
-        return $entityClass;
+        return self::resolveEntityClass($entity);
     }
 
-    private static function resolveClass(): mixed
+    /**
+     * @return mixed
+     * @throws InvalidDefaultVersionException
+     * @throws InvalidEntityException
+     * @throws EntityClassNotFoundException
+     * @throws BindingResolutionException
+     */
+    public static function resolveClass()
     {
         $className = self::resolveClassName();
 
         return app()->make($className);
     }
 
+    private static function supportedEntities(): array
+    {
+        return [
+            'Requests',
+            'Resources',
+        ];
+    }
+
+    /**
+     * @throws InvalidDefaultVersionException
+     */
     private static function getVersion(): string
     {
-        $defaultVersion = self::getLatestVersion();
+        $defaultVersion = self::getDefaultVersion();
 
         $requestPath = request()->path();
         preg_match('/api\/(?<version>.*?)\//', $requestPath, $requestVersion);
@@ -71,15 +75,51 @@ trait VersionResolver
 
     private static function getAvailableVersions(): array
     {
-
         $versions = config('api-version-manager.versions');
 
         return array_map('strtoupper', $versions);
     }
 
-    private static function getLatestVersion(): string
+    /**
+     * @throws InvalidDefaultVersionException
+     */
+    private static function getDefaultVersion(): string
     {
+        $defaultVersion = strtoupper(config('api-version-manager.version'));
+        $versions = self::getAvailableVersions();
+        if (!\in_array($defaultVersion, $versions)) {
+            throw new InvalidDefaultVersionException(sprintf('Default version %s is not supported by versions [%s]', $defaultVersion, implode(',', $versions)));
+        }
+        return $defaultVersion;
+    }
 
-        return strtoupper(config('api-version-manager.version'));
+    /**
+     * @throws InvalidDefaultVersionException
+     * @throws EntityClassNotFoundException
+     */
+    private static function resolveEntityClass(string $entity): string
+    {
+        $version = self::getVersion();
+        $appNamespace = config('api-version-manager.app_namespace');
+        $useFallbackEntity = config('api-version-manager.use_fallback_entity');
+        $className = class_basename(get_called_class());
+
+        $entityClass = sprintf("%s\\%s\\%s\\%s", $appNamespace, $entity, $version, $className);
+
+        if (! class_exists($entityClass) && $useFallbackEntity === true) {
+            $availableVersions = self::getAvailableVersions();
+            foreach($availableVersions as $availableVersion) {
+                $entityClass = sprintf("%s\\%s\\%s\\%s", $appNamespace, $entity, $availableVersion, $className);
+                if (class_exists($entityClass)) {
+                    break;
+                }
+            }
+        }
+
+        if (! class_exists($entityClass)) {
+            throw new EntityClassNotFoundException(sprintf('Class %s not found', $entityClass));
+        }
+
+        return $entityClass;
     }
 }

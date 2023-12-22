@@ -9,7 +9,7 @@ return [
     /**
      * Latest stable version
      */
-    'version' => 'v1',
+    'version' => '',
 
     /**
      * this prefix help that the package does not process non-api routes

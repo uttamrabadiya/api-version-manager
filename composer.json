@@ -3,7 +3,9 @@
     "description": "Simplify Laravel API versioning with ease. No more separate controllers—just flexibility, fallbacks, and version-specific components.",
     "keywords": [
         "uttamrabadiya",
-        "laravel-api-version-manager"
+        "api-version-manager",
+        "laravel-package",
+        "api-versioning"
     ],
     "homepage": "https://github.com/uttamrabadiya/api-version-manager",
     "license": "MIT",
@@ -11,35 +13,41 @@
     "authors": [
         {
             "name": "Uttam Rabadiya",
-            "email": "mail@uttam.dev"
+            "email": "mail@uttam.dev",
+            "homepage": "https://uttam.dev",
+            "role": "Developer"
         },
         {
             "name": "Divyank Munjapara",
-            "email": "mail@divyank.dev"
+            "email": "mail@divyank.dev",
+            "role": "Developer"
         }
     ],
     "require": {
-        "php": "^7.4|^8.0",
-        "illuminate/support": "^8.0|^9.0|^10.0"
+        "laravel/framework": "^8.0|^9.0|^10.0"
     },
     "require-dev": {
         "orchestra/testbench": "^6.0",
+        "phpstan/phpstan": "^1.10",
         "phpunit/phpunit": "^9.0|^10.0"
     },
     "autoload": {
         "psr-4": {
-            "Uttamrabadiya\\ApiVersionManager\\": "src"
+            "UttamRabadiya\\ApiVersionManager\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Uttamrabadiya\\ApiVersionManager\\Tests\\": "tests"
+            "UttamRabadiya\\ApiVersionManager\\Tests\\": "tests"
         }
     },
     "scripts": {
-        "test": "vendor/bin/phpunit",
-        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
-
+        "test:types": "phpstan analyse --ansi --memory-limit 256M",
+        "test:unit": "phpunit --colors=always -d memory_limit=1408M",
+        "test": [
+            "@test:types",
+            "@test:unit"
+        ]
     },
     "config": {
         "sort-packages": true
@@ -47,7 +55,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Uttamrabadiya\\ApiVersionManager\\ApiVersionManagerServiceProvider"
+                "UttamRabadiya\\ApiVersionManager\\ApiVersionManagerServiceProvider"
             ]
         }
     }

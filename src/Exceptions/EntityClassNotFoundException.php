@@ -1,10 +1,9 @@
 <?php
 
-namespace Uttamrabadiya\LaravelApiVersionManager\Exceptions;
+namespace UttamRabadiya\ApiVersionManager\Exceptions;
 
 use Exception;
 
 class EntityClassNotFoundException extends Exception
 {
-
 }

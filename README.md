@@ -15,23 +15,33 @@ The **Laravel API Version Manager** Package streamlines the management of API en
 You can install the package via Composer:
 
 ```bash
-composer require uttamrabadiya/laravel-api-version-manager
+composer require uttamrabadiya/api-version-manager
 ```
 
-## Usage
-- Define Versions: Specify the supported API versions in your route configuration.
-- Inject Versioned Components: In your existing controller methods, access version-specific Request and Resource classes seamlessly, without cluttering your codebase.
-- Fallback Mechanism: Set up fallback versions to ensure graceful degradation when a requested version is not available.
+## Configuration
 
+### Publish Config File
+It is mandatory to publish the config file before using the package. You can publish the config file using the following command:
+```bash
+php artisan vendor:publish --tag=api-version-manager
+```
 
-### Available Commands
+### Mandatory Configurations:
+- Define available `versions` array in config
+- Define default version `version` in config
+
+### Other possible configurations are:
+- `app_http_namespace` (default: `App\Http`) - Generally we use `App\Http` namespace to store all our requests & resources classes, but if you are using different namespace then you can define it here.
+- `api_prefix` (default: `api`) - API prefix for all versioned routes.
+- `use_fallback_entity` (default: `true`) - If you want to use fallback entity for all request & resource class then set this to `true`, otherwise set it to `false`. For example, you define `SampleRequest` in **V1**, and now you want to use same request in **V2** then you can set this option to `true` and it will automatically use `SampleRequest` from **V1**.
+
+## Available Commands
 
 #### Create a new versioned request
 ```bash
 php artisan make:versioned-request {name}
 ```
 **Possible options:**
-- `--version`: The version of the request to create. If not specified, the request will be created for the latest version.
 - `--force`: Overwrite the request if it already exists.
 
 #### Create a new versioned resource
@@ -42,10 +52,47 @@ php artisan make:versioned-resource {name}
 - `--collection`: Create a resource collection instead of a single resource.
 - `--force`: Overwrite the resource if it already exists.
 
-#### Publish config file
+## Usage
 
-``` php
-php artisan vendor:publish --provider="UttamRabadiya\ApiVersionManager\ApiVersionManagerServiceProvider"
+Example of `api.php` file:
+```php
+Route::prefix('v1')->group(function () {
+    Route::get('endpoint1', [SomeController::class, 'endpoint1']); // Available on v1 & v2 (Via default fallback)
+    Route::get('endpoint2', [SomeController::class, 'endpoint2']); // Available on v1 & v2 (Via default fallback)
+});
+Route::prefix('v2')->group(function () {
+    Route::get('new-endpoint', [SomeController::class, 'endpoint3']); // Available only on v2 
+});
+```
+Example of `SomeController.php` file:
+```php
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Versioned\EndpointResource; // Mandatory to use versioned resource only. Don't use `App\Http\Resources\V1\EndpointResource` or `App\Http\Resources\V2\EndpointResource`
+use App\Http\Requests\Versioned\NewEndpointRequest; // Mandatory to use versioned request only. Don't use `App\Http\Requests\V1\NewEndpointRequest` or `App\Http\Requests\V2\NewEndpointRequest`
+use Illuminate\Http\Request;
+
+class SomeController extends Controller
+{
+    public function endpoint1(Request $request)
+    {
+        return DashboardResource::item(['some' => 'data']); // Replacement of native `new DashboardResource(['some' => 'data'])` resource
+    }
+    
+    public function endpoint1(Request $request)
+    {
+        return DashboardResource::collection(['some' => 'data']);
+    }
+    
+    public function endpoint3(NewEndpointRequest $request)
+    {
+        return DashboardResource::item(['some' => 'data']);
+    }
+}
+
 ```
 
 ## Changelog

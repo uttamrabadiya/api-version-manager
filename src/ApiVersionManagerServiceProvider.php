@@ -19,7 +19,7 @@ class ApiVersionManagerServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__ . '/../config/config.php' => config_path('api-version-manager.php'),
-            ], 'config');
+            ], 'api-version-manager');
 
             // Registering package commands.
             $this->commands([

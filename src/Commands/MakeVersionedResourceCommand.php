@@ -34,19 +34,40 @@ class MakeVersionedResourceCommand extends GeneratorCommand
     protected $type = 'Resource';
 
     /**
+     * The list of versioned classes.
+     *
+     * @var array
+     */
+    protected $versionedClassList = [];
+
+    /**
      * Execute the console command.
      * @throws InvalidDefaultVersionException|FileNotFoundException
      */
     public function handle()
     {
-        parent::handle();
-
         $versions = $this->gatherVersionsInteractively();
         foreach ($versions as $version) {
             $this->createResource($version);
         }
 
+        parent::handle();
         return true;
+    }
+
+    /**
+     * Build the class with the given name.
+     *
+     * @param string $name
+     * @return string
+     *
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+     */
+    protected function buildClass($name): string
+    {
+        $stub = $this->files->get($this->getStub());
+
+        return $this->replaceVersionClasses($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
     }
 
     protected function getStub()
@@ -62,7 +83,15 @@ class MakeVersionedResourceCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return $rootNamespace.'\Http\Resources\Versioned';
+        return $this->getResourceNamespace($rootNamespace).'\Versioned';
+    }
+
+    /**
+     * Get the resource namespace for the class.
+     */
+    protected function getResourceNamespace(string $rootNamespace): string
+    {
+        return $rootNamespace . '\Http\Resources';
     }
 
     /**
@@ -89,6 +118,9 @@ class MakeVersionedResourceCommand extends GeneratorCommand
             '--force' => $this->option('force'),
             '--collection' => $this->option('collection'),
         ]));
+
+        $rootNamespace = trim($this->laravel->getNamespace(), '\\');
+        $this->versionedClassList[] = $this->getResourceNamespace($rootNamespace) . '\\' . $version . '\\' . $resource;
     }
 
     /**
@@ -110,5 +142,30 @@ class MakeVersionedResourceCommand extends GeneratorCommand
         }
 
         return $this->choice('Select required versions for the resource', $versions, array_search($defaultVersion, $versions), null, true);
+    }
+
+    /**
+     * Replace the version class list for the given stub.
+     *
+     * @param string $stub
+     * @return $this
+     */
+    protected function replaceVersionClasses(&$stub): self
+    {
+        $classListText = '/**';
+        foreach ($this->versionedClassList as $versionedClass) {
+            if (!str_starts_with($versionedClass, '\\')) {
+                $versionedClass = '\\' . $versionedClass;
+            }
+            $classListText .= "\n * @see {$versionedClass}";
+        }
+        $classListText .= "\n */";
+        $stub = str_replace(
+            '{{ versionClasses }}',
+            $classListText,
+            $stub
+        );
+
+        return $this;
     }
 }

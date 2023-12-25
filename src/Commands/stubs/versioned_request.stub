@@ -4,6 +4,7 @@ namespace {{ namespace }};
 
 use UttamRabadiya\ApiVersionManager\Http\Requests\BaseRequest;
 
+{{ versionClasses }}
 final class {{ class }} extends BaseRequest
 {
 }

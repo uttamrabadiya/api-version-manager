@@ -4,6 +4,7 @@ namespace {{ namespace }};
 
 use UttamRabadiya\ApiVersionManager\Http\Resources\BaseResource;
 
+{{ versionClasses }}
 final class {{ class }} extends BaseResource
 {
 }

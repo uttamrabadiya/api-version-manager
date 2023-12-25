@@ -100,7 +100,7 @@ trait VersionResolver
     private static function resolveEntityClass(string $entity): string
     {
         $version = self::getVersion();
-        $appNamespace = config('api-version-manager.app_namespace');
+        $appNamespace = config('api-version-manager.app_http_namespace');
         $useFallbackEntity = config('api-version-manager.use_fallback_entity');
         $className = class_basename(get_called_class());
 

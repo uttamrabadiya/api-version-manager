@@ -34,19 +34,40 @@ class MakeVersionedRequestCommand extends GeneratorCommand
     protected $type = 'Request';
 
     /**
+     * The list of versioned classes.
+     *
+     * @var array
+     */
+    protected $versionedClassList = [];
+
+    /**
      * Execute the console command.
      * @throws InvalidDefaultVersionException|FileNotFoundException
      */
     public function handle()
     {
-        parent::handle();
-
         $versions = $this->gatherVersionsInteractively();
         foreach ($versions as $version) {
             $this->createRequest($version);
         }
 
+        parent::handle();
         return true;
+    }
+
+    /**
+     * Build the class with the given name.
+     *
+     * @param string $name
+     * @return string
+     *
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+     */
+    protected function buildClass($name): string
+    {
+        $stub = $this->files->get($this->getStub());
+
+        return $this->replaceVersionClasses($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
     }
 
     protected function getStub(): string
@@ -62,7 +83,15 @@ class MakeVersionedRequestCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace): string
     {
-        return $rootNamespace . '\Http\Requests\Versioned';
+        return $this->getRequestNamespace($rootNamespace) . '\Versioned';
+    }
+
+    /**
+     * Get the request namespace for the class.
+     */
+    protected function getRequestNamespace(string $rootNamespace): string
+    {
+        return $rootNamespace . '\Http\Requests';
     }
 
     /**
@@ -87,6 +116,9 @@ class MakeVersionedRequestCommand extends GeneratorCommand
             'name' => "$version/$request",
             '--force' => $this->option('force'),
         ]));
+
+        $rootNamespace = trim($this->laravel->getNamespace(), '\\');
+        $this->versionedClassList[] = $this->getRequestNamespace($rootNamespace) . '\\' . $version . '\\' . $request;
     }
 
     /**
@@ -108,5 +140,30 @@ class MakeVersionedRequestCommand extends GeneratorCommand
         }
 
         return $this->choice('Select required versions for the request', $versions, array_search($defaultVersion, $versions), null, true);
+    }
+
+    /**
+     * Replace the version class list for the given stub.
+     *
+     * @param string $stub
+     * @return $this
+     */
+    protected function replaceVersionClasses(&$stub): self
+    {
+        $classListText = '/**';
+        foreach ($this->versionedClassList as $versionedClass) {
+            if (!str_starts_with($versionedClass, '\\')) {
+                $versionedClass = '\\' . $versionedClass;
+            }
+            $classListText .= "\n * @see {$versionedClass}";
+        }
+        $classListText .= "\n */";
+        $stub = str_replace(
+            '{{ versionClasses }}',
+            $classListText,
+            $stub
+        );
+
+        return $this;
     }
 }

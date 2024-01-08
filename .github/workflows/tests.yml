@@ -24,7 +24,7 @@ jobs:
           coverage: "none"
 
       - name: "Install PHP dependencies"
-        run: "composer install --prefer-stable --no-interaction --no-progress"
+        run: "composer install --prefer-dist --no-interaction"
 
       - name: "Unit Tests"
         run: "vendor/bin/phpunit --colors=always"

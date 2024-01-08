@@ -9,9 +9,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         php: ['7.3', '7.4', '8.1', '8.2', '8.3']
-        dependency-version: [prefer-lowest, prefer-stable]
 
-    name: "PHP ${{ matrix.php }} - ${{ matrix.os }} - ${{ matrix.dependency-version }}"
+    name: "PHP ${{ matrix.php }} - ${{ matrix.os }}"
 
     steps:
       - name: "Checkout"
@@ -25,7 +24,7 @@ jobs:
           coverage: "none"
 
       - name: "Install PHP dependencies"
-        run: "composer install --${{ matrix.dependency-version }} --no-interaction --no-progress"
+        run: "composer install --prefer-stable --no-interaction --no-progress"
 
       - name: "Unit Tests"
         run: "vendor/bin/phpunit --colors=always"

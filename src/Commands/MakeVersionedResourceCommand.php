@@ -5,13 +5,11 @@ namespace UttamRabadiya\ApiVersionManager\Commands;
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Symfony\Component\Console\Input\InputOption;
-use UttamRabadiya\ApiVersionManager\Exceptions\InvalidDefaultVersionException;
-use UttamRabadiya\ApiVersionManager\Traits\VersionResolver;
+use UttamRabadiya\ApiVersionManager\Exceptions\InvalidVersionException;
+use UttamRabadiya\ApiVersionManager\Helpers\VersionHelper;
 
 class MakeVersionedResourceCommand extends GeneratorCommand
 {
-    use VersionResolver;
-
     /**
      * The name and signature of the console command.
      *
@@ -36,23 +34,33 @@ class MakeVersionedResourceCommand extends GeneratorCommand
     /**
      * The list of versioned classes.
      *
-     * @var array
+     * @var array<int, string>
      */
     protected $versionedClassList = [];
 
     /**
      * Execute the console command.
-     * @throws InvalidDefaultVersionException|FileNotFoundException
+     * @throws InvalidVersionException|FileNotFoundException
      */
     public function handle()
     {
-        $versions = $this->gatherVersionsInteractively();
+        if (is_null($this->option('versions'))) {
+            $versions = $this->gatherVersionsInteractively();
+        } else {
+            /** @var string $versions */
+            $versions = $this->option('versions');
+            $versions = explode(',' , $versions);
+            $versions = array_map('strtoupper', $versions);
+            VersionHelper::validateVersions($versions);
+        }
+
         foreach ($versions as $version) {
             $this->createResource($version);
         }
 
         parent::handle();
-        return true;
+
+        return null;
     }
 
     /**
@@ -81,7 +89,7 @@ class MakeVersionedResourceCommand extends GeneratorCommand
      * @param  string  $rootNamespace
      * @return string
      */
-    protected function getDefaultNamespace($rootNamespace)
+    protected function getDefaultNamespace($rootNamespace): string
     {
         return $this->getResourceNamespace($rootNamespace).'\Versioned';
     }
@@ -104,6 +112,7 @@ class MakeVersionedResourceCommand extends GeneratorCommand
         return [
             ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the resource already exists'],
             ['collection', 'c', InputOption::VALUE_NONE, 'Create a resource collection'],
+            ['versions', 'vr', InputOption::VALUE_OPTIONAL, 'Select the version of the resource'],
         ];
     }
 
@@ -126,13 +135,13 @@ class MakeVersionedResourceCommand extends GeneratorCommand
     /**
      * Gather the desired Sail services using an interactive prompt.
      *
-     * @return array
-     * @throws InvalidDefaultVersionException
+     * @return array<int, string>
+     * @throws InvalidVersionException
      */
     private function gatherVersionsInteractively(): array
     {
-        $versions = self::getAvailableVersions();
-        $defaultVersion = self::getDefaultVersion();
+        $versions = VersionHelper::getAvailableVersions();
+        $defaultVersion = VersionHelper::getDefaultVersion();
         if (function_exists('\Laravel\Prompts\multiselect')) {
             return \Laravel\Prompts\multiselect(
                 'Select required versions for the resource',
@@ -140,8 +149,9 @@ class MakeVersionedResourceCommand extends GeneratorCommand
                 [$defaultVersion],
             );
         }
-
-        return $this->choice('Select required versions for the resource', $versions, array_search($defaultVersion, $versions), null, true);
+        /** @var array<int, string> $selectedVersions */
+        $selectedVersions = $this->choice('Select required versions for the resource', $versions, (string) array_search($defaultVersion, $versions), null, true);
+        return $selectedVersions;
     }
 
     /**
@@ -150,7 +160,7 @@ class MakeVersionedResourceCommand extends GeneratorCommand
      * @param string $stub
      * @return $this
      */
-    protected function replaceVersionClasses(&$stub): self
+    protected function replaceVersionClasses(string &$stub): self
     {
         $classListText = '/**';
         foreach ($this->versionedClassList as $versionedClass) {

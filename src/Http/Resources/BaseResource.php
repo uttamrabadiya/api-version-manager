@@ -19,6 +19,7 @@ abstract class BaseResource
      */
     public static function item($data): JsonResource
     {
+        /** @var JsonResource $resource */
         $resource = self::resolveClassName();
 
         return new $resource($data);

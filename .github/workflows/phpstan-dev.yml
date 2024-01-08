@@ -1,0 +1,38 @@
+name: "PHPStan"
+
+on: ['push', 'pull_request']
+
+jobs:
+  phpstan:
+    strategy:
+      matrix:
+        php: ["8.1"]
+        laravel: ["^10.0"]
+      fail-fast: false
+
+    name: "P${{ matrix.php }} - L${{ matrix.laravel }}"
+
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: "Checkout code"
+        uses: "actions/checkout@v3"
+
+      - name: "Setup PHP"
+        uses: "shivammathur/setup-php@v2"
+        with:
+          php-version: "${{ matrix.php }}"
+          extensions: "dom, curl, libxml, mbstring, zip, fileinfo"
+          coverage: "none"
+
+      - name: "Change Composer config minimum-stability"
+        run: "composer config minimum-stability stable"
+
+      - name: "Change Composer config prefer-stable"
+        run: "composer config prefer-stable false"
+
+      - name: "Install Dependencies"
+        run: "composer install --prefer-dist --no-interaction"
+
+      - name: "Run PHPStan"
+        run: "vendor/bin/phpstan analyze"

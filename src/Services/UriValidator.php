@@ -9,7 +9,7 @@ use Illuminate\Routing\Matching\UriValidator as LaravelUriValidator;
 class UriValidator extends LaravelUriValidator
 {
     /**
-     * @var array[]
+     * @var array<int, string>
      */
     private $versions;
 

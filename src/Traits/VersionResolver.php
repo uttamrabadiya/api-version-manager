@@ -3,14 +3,16 @@
 namespace UttamRabadiya\ApiVersionManager\Traits;
 
 use Illuminate\Contracts\Container\BindingResolutionException;
-use UttamRabadiya\ApiVersionManager\Exceptions\InvalidDefaultVersionException;
+use Illuminate\Http\Request;
+use UttamRabadiya\ApiVersionManager\Exceptions\InvalidVersionException;
 use UttamRabadiya\ApiVersionManager\Exceptions\InvalidEntityException;
 use UttamRabadiya\ApiVersionManager\Exceptions\EntityClassNotFoundException;
+use UttamRabadiya\ApiVersionManager\Helpers\VersionHelper;
 
 trait VersionResolver
 {
     /**
-     * @throws InvalidDefaultVersionException
+     * @throws InvalidVersionException
      * @throws InvalidEntityException
      * @throws EntityClassNotFoundException
      */
@@ -21,7 +23,7 @@ trait VersionResolver
         }
 
         $entity = self::RESOLVER_ENTITY;
-        if (! in_array($entity, self::supportedEntities())) {
+        if (! in_array($entity, ['Requests', 'Resources'])) {
             throw new InvalidEntityException(sprintf('Unsupported resolver entity: %s', $entity));
         }
 
@@ -30,7 +32,7 @@ trait VersionResolver
 
     /**
      * @return mixed
-     * @throws InvalidDefaultVersionException
+     * @throws InvalidVersionException
      * @throws InvalidEntityException
      * @throws EntityClassNotFoundException
      * @throws BindingResolutionException
@@ -42,22 +44,19 @@ trait VersionResolver
         return app()->make($className);
     }
 
-    private static function supportedEntities(): array
-    {
-        return [
-            'Requests',
-            'Resources',
-        ];
-    }
-
     /**
-     * @throws InvalidDefaultVersionException
+     * @throws InvalidVersionException
+     * @throws \Exception
      */
     private static function getVersion(): string
     {
-        $defaultVersion = self::getDefaultVersion();
+        $defaultVersion = VersionHelper::getDefaultVersion();
 
-        $requestPath = request()->path();
+        $request = request();
+        if (!$request instanceof Request) {
+            throw new \Exception('Request is not available to resolve version.');
+        }
+        $requestPath = $request->path();
         preg_match('/api\/(?<version>.*?)\//', $requestPath, $requestVersion);
         $version = $requestVersion['version'] ?? null;
 
@@ -73,28 +72,8 @@ trait VersionResolver
         return strtoupper($version);
     }
 
-    private static function getAvailableVersions(): array
-    {
-        $versions = config('api-version-manager.versions');
-
-        return array_map('strtoupper', $versions);
-    }
-
     /**
-     * @throws InvalidDefaultVersionException
-     */
-    private static function getDefaultVersion(): string
-    {
-        $defaultVersion = strtoupper(config('api-version-manager.version'));
-        $versions = self::getAvailableVersions();
-        if (!\in_array($defaultVersion, $versions)) {
-            throw new InvalidDefaultVersionException(sprintf('Default version %s is not supported by versions [%s]', $defaultVersion, implode(',', $versions)));
-        }
-        return $defaultVersion;
-    }
-
-    /**
-     * @throws InvalidDefaultVersionException
+     * @throws InvalidVersionException
      * @throws EntityClassNotFoundException
      */
     private static function resolveEntityClass(string $entity): string
@@ -107,7 +86,7 @@ trait VersionResolver
         $entityClass = sprintf("%s\\%s\\%s\\%s", $appNamespace, $entity, $version, $className);
 
         if (! class_exists($entityClass) && $useFallbackEntity === true) {
-            $availableVersions = self::getAvailableVersions();
+            $availableVersions = VersionHelper::getAvailableVersions();
             foreach($availableVersions as $availableVersion) {
                 $entityClass = sprintf("%s\\%s\\%s\\%s", $appNamespace, $entity, $availableVersion, $className);
                 if (class_exists($entityClass)) {

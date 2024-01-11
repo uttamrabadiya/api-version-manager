@@ -1,6 +1,9 @@
 # Laravel API Version Manager
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/uttamrabadiya/api-version-manager.svg)](https://packagist.org/packages/uttamrabadiya/api-version-manager)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/uttamrabadiya/api-version-manager/tests.yml?branch=main&label=tests)](https://github.com/uttamrabadiya/api-version-manager/actions?query=workflow%3Atests+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/uttamrabadiya/api-version-manager.svg)](https://packagist.org/packages/uttamrabadiya/api-version-manager)
 
 The **Laravel API Version Manager** Package streamlines the management of API endpoint versions in Laravel applications. This package empowers you to effortlessly handle API versioning, eliminating the necessity to create individual controllers for each version. Its design presents a flexible and efficient solution, enabling you to define fallback versions and effortlessly generate version-specific Requests and Resources.
 
